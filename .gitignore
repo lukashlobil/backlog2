@@ -1,0 +1,13 @@
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+node_modules/
+dist/
+.env
+.npm-cache/
+data/
+test-results/
+playwright-report/
+.browsers/
