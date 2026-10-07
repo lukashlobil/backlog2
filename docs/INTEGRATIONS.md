@@ -2,6 +2,10 @@
 
 Last reviewed: 2026-10-07. Verify provider terms again before public or monetized use.
 
+## Firebase — authentication
+
+See [AUTH.md](AUTH.md) for setup and security boundaries. Firebase web configuration is provided at runtime through `/api/auth/config`; Firebase Admin verifies ID tokens on the backend. Email/password and Google providers must be enabled in the user's project. Firestore stores backlog entries through the backend; see [FIRESTORE.md](FIRESTORE.md) for database setup and server-only credentials.
+
 ## Open Library — books
 
 - Search: https://openlibrary.org/dev/docs/api/search

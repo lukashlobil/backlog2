@@ -1,4 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
+
+const tokens = new WeakMap<Page, string>();
 
 async function add(page: Page, title: string, type: 'Games' | 'Books' | 'Movies') {
   await page.getByRole('button', { name: 'Add an item', exact: true }).click();
@@ -10,12 +13,16 @@ async function add(page: Page, title: string, type: 'Games' | 'Books' | 'Movies'
   await expect(dialog).not.toBeVisible();
 }
 
-test.beforeEach(async ({ request }) => {
-  const current = await (await request.get('/api/backlog')).json();
-  for (const entry of current.entries) {
-    const snapshot = await (await request.get('/api/backlog')).json();
-    await request.delete(`/api/backlog/${entry.id}`, { data: { revision: snapshot.revision } });
-  }
+test.beforeEach(async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Create an account', exact: true }).click();
+  await page.getByLabel('Email', { exact: true }).fill(`backlog-${randomUUID()}@example.test`);
+  await page.getByLabel('Password', { exact: true }).fill('Backlog-test-123!');
+  await page.getByLabel('Confirm password', { exact: true }).fill('Backlog-test-123!');
+  const loading = page.waitForRequest(request => request.url().endsWith('/api/backlog') && Boolean(request.headers().authorization));
+  await page.getByRole('button', { name: 'Create account', exact: true }).click();
+  tokens.set(page, (await loading).headers().authorization);
+  await expect(page.getByRole('heading', { name: 'Your backlog.' })).toBeVisible();
 });
 
 test('add three media types, reorder, filter, reload, and remove', async ({ page }) => {
@@ -51,7 +58,7 @@ test('catalog search, add result, and keyboard reorder', async ({ page }) => {
   await dialog.getByRole('textbox', { name: 'Search catalog', exact: true }).fill('hobbit');
   await dialog.getByRole('button', { name: 'Add The Hobbit', exact: true }).click();
   await expect(dialog).not.toBeVisible();
-  const snapshot = await (await page.request.get('/api/backlog')).json();
+  const snapshot = await (await page.request.get('/api/backlog', { headers: { Authorization: tokens.get(page)! } })).json();
   const targetId = snapshot.entries.find((entry: { title: string }) => entry.title === 'Hades').id;
   const handle = page.getByRole('button', { name: 'Drag The Hobbit to reorder', exact: true });
   await handle.focus();

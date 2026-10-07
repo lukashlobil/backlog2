@@ -1,10 +1,47 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { dirname, join } from 'node:path';
+import { createHash, randomUUID } from 'node:crypto';
 import { identity, snapshotSchema, type Media, type Snapshot } from '../../shared/domain.ts';
 
 export class AppError extends Error {
   constructor(public status: number, message: string) { super(message); }
+}
+
+export type BacklogRepository = Pick<BacklogStore, 'read' | 'add' | 'reorder' | 'remove'>;
+export interface AccountBacklogs { forUser(uid: string): Promise<BacklogRepository> }
+
+export function accountKey(projectId: string, uid: string): string {
+  if (!uid || uid.length > 128) throw new AppError(401, 'Invalid account identity.');
+  return createHash('sha256').update(JSON.stringify([projectId, uid])).digest('hex');
+}
+
+// Store identity comes exclusively from a verified Firebase UID, never a URL/body.
+export class UserBacklogs {
+  private stores = new Map<string, Promise<BacklogStore>>();
+  constructor(private legacyFile: string, private projectId: string, private legacyOwner?: string) {}
+
+  forUser(uid: string): Promise<BacklogStore> {
+    if (!uid || uid.length > 128) throw new AppError(401, 'Invalid account identity.');
+    let store = this.stores.get(uid);
+    if (!store) {
+      const key = accountKey(this.projectId, uid);
+      const file = join(dirname(this.legacyFile), 'users', `${key}.json`);
+      store = (async () => {
+        if (uid === this.legacyOwner) {
+          const legacy = await new BacklogStore(this.legacyFile).read();
+          if (legacy.entries.length) {
+            await mkdir(dirname(file), { recursive: true });
+            try { await writeFile(file, JSON.stringify(legacy, null, 2), { encoding: 'utf8', flag: 'wx' }); }
+            catch (error) { if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error; }
+          }
+        }
+        return new BacklogStore(file);
+      })();
+      this.stores.set(uid, store);
+      store.catch(() => this.stores.delete(uid));
+    }
+    return store;
+  }
 }
 
 // One writer process; serialized, atomic mutations with optimistic concurrency.
@@ -20,7 +57,7 @@ export class BacklogStore {
     }
   }
 
-  private mutate(change: (current: Snapshot) => Snapshot): Promise<Snapshot> {
+  protected mutate(change: (current: Snapshot) => Snapshot): Promise<Snapshot> {
     const operation = this.queue.then(async () => {
       const current = await this.read();
       const next = snapshotSchema.parse(change(current));

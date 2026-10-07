@@ -2,9 +2,9 @@ import express from 'express';
 import { resolve } from 'node:path';
 import { existsSync } from 'node:fs';
 import { createApp } from './app.ts';
-import { BacklogStore } from './store.ts';
+import { createBacklogs } from './firestore.ts';
 
-const app = createApp(new BacklogStore(resolve(process.env.BACKLOG_DATA_FILE ?? 'data/backlog.json')));
+const app = createApp(createBacklogs(process.env, resolve(process.env.BACKLOG_DATA_FILE ?? 'data/backlog.json')));
 const dist = resolve('dist');
 if (existsSync(dist)) {
   app.use(express.static(dist));

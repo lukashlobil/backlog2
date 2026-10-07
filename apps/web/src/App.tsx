@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { ArrowDown, ArrowUp, ArrowUpRight, BookOpen, Check, Film, Gamepad2, GripVertical, Layers3, LoaderCircle, Plus, Search, Trash2, X } from 'lucide-react';
 import { identity, moveVisible, type Entry, type Media, type MediaType, type Snapshot } from '../../../shared/domain';
 import { ApiError, request } from './api';
+import { AccountControls } from './AuthGate';
 
 const types = { game: { label: 'Games', singular: 'Game', icon: Gamepad2 }, book: { label: 'Books', singular: 'Book', icon: BookOpen }, movie: { label: 'Movies', singular: 'Movie', icon: Film } };
 type Filter = 'all' | MediaType;
@@ -151,10 +152,10 @@ export function App() {
         {(Object.keys(types) as MediaType[]).map(type => { const Icon = types[type].icon; return <button key={type} className={`nav-item ${filter === type ? 'active' : ''}`} onClick={() => setFilter(type)}><Icon size={19} /><span>{types[type].label}</span><span className="nav-count">{snapshot.entries.filter(entry => entry.type === type).length}</span></button>; })}
       </nav></div>
       <div className="sidebar-note"><div className="little-star">✳</div><h3>A little less scrolling.<br />A little more doing.</h3><p>Keep the good stuff in one place.<br />Get to it at your own pace.</p></div>
-      <div className="local-status"><span />Personal backlog <span className="version">v0.1</span></div>
+      <div className="local-status"><span />Private to your account <span className="version">v0.2</span></div>
     </aside>
     <main>
-      <div className="topbar"><span>Your collection / <strong>{filter === 'all' ? 'All items' : types[filter].label}</strong></span><span className="storage-note"><span className="status-dot" />Saved on this computer</span></div>
+      <div className="topbar"><span>Your collection / <strong>{filter === 'all' ? 'All items' : types[filter].label}</strong></span><AccountControls disabled={busy} /></div>
       <div className="main-content">
         <header className="page-header"><div><span className="eyebrow">GOOD THINGS AHEAD</span><h1>{filter === 'all' ? 'Your backlog' : `Your ${types[filter].label.toLowerCase()}`}<span className="heading-dot">.</span></h1><p>A home for everything you want to play, read, and watch.</p></div><button className="primary-button" onClick={() => setAdding(true)} disabled={disabled}><Plus size={19} />Add an item</button></header>
         <div className="intro-strip"><div className="strip-icon"><Layers3 size={22} strokeWidth={1.5} /></div><div><strong>Your next favorite is waiting.</strong><p>Add what catches your eye. Move what excites you to the top.</p></div><span className="strip-decoration" aria-hidden="true">✳</span></div>

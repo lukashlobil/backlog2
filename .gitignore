@@ -13,3 +13,13 @@ test-results/
 playwright-report/
 .browsers/
 backlog-docker-backup*.json
+backlog-docker-backup*/
+*-debug.log
+.firebase/
+ 
+.env
+.env.*
+!.env.example
+.secrets/
+*firebase-adminsdk*.json
+*service-account*.json

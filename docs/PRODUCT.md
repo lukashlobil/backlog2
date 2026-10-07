@@ -1,12 +1,14 @@
-# Product — v0.1
+# Product — v0.2
 
 ## Purpose
 
-One personal list of games, books, and movies to enjoy next. The user's requested first release is adding and reordering items. Social and purchasing features are explicitly excluded.
+One private list per account of games, books, and movies to enjoy next. Adding and reordering remain the core workflow. Firebase Authentication has been added at the user's request. Social and purchasing features are explicitly excluded.
 
 ## Implemented scope
 
 - Responsive web application, React frontend and Node backend.
+- Firebase email/password registration, sign-in, Google sign-in, password reset, and sign-out.
+- Verified user identity on the API and separate persistent data for each account.
 - Add from a supported online catalog or enter a title manually.
 - Optional identifying metadata and catalog covers with graceful image fallback.
 - An ordered list with All items, Games, Books, and Movies views.
@@ -16,7 +18,7 @@ One personal list of games, books, and movies to enjoy next. The user's requeste
 
 ## Rules
 
-- One list per local server, with no user accounts.
+- One list per Firebase project/UID in Firestore. Authentication and cloud persistence use Firebase; explicit file mode remains available for local-only operation.
 - New entries append to the end. Repeated additions of the same provider identity are idempotent.
 - Manual duplicates use media type, case-insensitive trimmed title, and year. Manual and provider entries are not automatically merged.
 - The visible type filters are not user-defined categories.
@@ -26,8 +28,8 @@ One personal list of games, books, and movies to enjoy next. The user's requeste
 
 ## Deferred
 
-Authentication, Firebase, cross-device synchronization, native mobile applications, custom categories, statuses, reviews, friends, recommendations, importing external libraries, and purchases.
+Native mobile applications, custom categories, statuses, reviews, friends, recommendations, importing external libraries, and purchases.
 
-## Assumption to revisit
+## Existing local data
 
-The first slice uses local single-user storage so it can run without cloud accounts or deployment credentials. The user was offered an account/cloud-sync choice while implementation proceeded; local storage is the stated initial default, not a claim that accounts were implemented.
+Existing local data is retained and not automatically uploaded. FIRESTORE_IMPORT_UID explicitly imports one account into an absent cloud snapshot, preserving IDs and order. LEGACY_BACKLOG_OWNER_UID additionally selects an owner for pre-auth shared files. Neither existing cloud snapshots nor local files are overwritten. See FIRESTORE.md.

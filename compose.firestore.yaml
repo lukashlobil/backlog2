@@ -1,0 +1,11 @@
+# Local credentials are mounted at runtime, never copied into the image.
+services:
+  backlog:
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase_service_account
+    secrets:
+      - firebase_service_account
+
+secrets:
+  firebase_service_account:
+    file: ./.secrets/firebase-service-account.json

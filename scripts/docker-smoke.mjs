@@ -22,7 +22,7 @@ async function start() {
   const base = `http://${address}`;
   for (let attempt = 0; attempt < 60; attempt++) {
     try {
-      const response = await fetch(`${base}/api/backlog`, { signal: AbortSignal.timeout(1000) });
+      const response = await fetch(`${base}/api/health`, { signal: AbortSignal.timeout(1000) });
       if (response.ok) return base;
     } catch { /* Wait for the container to bind its port. */ }
     await delay(500);
@@ -53,21 +53,21 @@ try {
   assert.equal(docker('exec', name, 'node', '-e', "console.log(require('node:fs').existsSync('/app/.env'))"), 'false');
   assert.equal(docker('exec', name, 'node', '-e', "console.log(require('node:fs').existsSync('/app/node_modules/typescript'))"), 'false');
   assert.equal((await fetch(`${base}/api/backlog`, { headers: { Origin: 'https://example.com' } })).status, 403);
-  for (const title of ['Docker first', 'Docker second']) {
-    await request(base, '/api/backlog', 'POST', { type: 'game', title, source: 'manual', sourceId: randomUUID() });
+  // No Firebase configuration is supplied to this isolated production container:
+  // health/static pages work, but all application routes must fail closed.
+  assert.equal((await request(base, '/api/auth/config')).configured, false);
+  for (const path of ['/api/backlog', '/api/providers', '/api/search?type=game&q=hades']) {
+    assert.equal((await fetch(`${base}${path}`)).status, 503);
   }
-  const original = await request(base, '/api/backlog');
-  const reordered = await request(base, '/api/backlog/order', 'PUT', {
-    revision: original.revision, ids: original.entries.map(entry => entry.id).reverse(),
-  });
-  assert.deepEqual(reordered.entries.map(entry => entry.title), ['Docker second', 'Docker first']);
+  assert.equal((await fetch(`${base}/api/backlog`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'Unauthorized' }) })).status, 503);
   docker('stop', '--time', '15', name);
   assert.equal(docker('inspect', '--format', '{{.State.ExitCode}}', name), '0');
   docker('rm', name);
   containerCreated = false;
   base = await start();
-  assert.deepEqual(await request(base, '/api/backlog'), reordered);
-  console.log('Docker checks passed: static assets, non-root runtime, excluded secrets/dev tools, origin checks, add/reorder, clean shutdown, and persistence across container replacement.');
+  assert.equal((await request(base, '/api/auth/config')).configured, false);
+  assert.equal((await fetch(`${base}/api/backlog`)).status, 503);
+  console.log('Docker checks passed: static assets, non-root runtime, excluded secrets/dev tools, origin checks, closed authentication gate, clean shutdown, and container replacement. Authenticated persistence is covered by API and Firebase emulator tests.');
 } finally {
   if (containerCreated) {
     docker('stop', '--time', '15', name);
