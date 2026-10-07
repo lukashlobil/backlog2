@@ -27,6 +27,36 @@ In Windows PowerShell, use `npm.cmd` if execution policy blocks `npm.ps1`.
 
 The development command reloads web changes. Restart it for backend changes, or run `npm run dev:api` and `npm run dev:web` in separate terminals for backend watch mode.
 
+## Run with Docker
+
+Start Docker Desktop with Linux containers enabled. From the repository root:
+
+```sh
+docker compose up --build -d --wait
+```
+
+Open **http://127.0.0.1:8080**. The container serves both the built React frontend and the API; Vite is not required at runtime. Only the local computer can access the published port. The existing non-Docker development server can continue on port 5173.
+
+Compose reads the existing `.env` for optional IGDB/TMDB credentials. Credentials are passed at runtime, never copied into the image or build context. Set `BACKLOG_HTTP_PORT=8081` in `.env` to choose another host port. After changing credentials or the port, run `docker compose up -d --wait` again to recreate the service with the new configuration.
+
+```sh
+docker compose ps
+docker compose logs --tail=50 backlog
+docker compose down
+```
+
+Data is stored in the named `backlog-data` volume at `/app/data/backlog.json`. Normal stop, restart, rebuild, and `docker compose down` preserve it. **`docker compose down --volumes` deletes the container's backlog**, so do not use it unless you intend to erase that data. Run one replica per volume.
+
+The Docker backlog starts separately from your existing local `data/backlog.json`; it does not import or modify that file. To make a backup of the Docker backlog after at least one item has been saved:
+
+```sh
+docker compose cp backlog:/app/data/backlog.json ./backlog-docker-backup.json
+```
+
+Store backups privately. For a standalone image build: `docker build -t backlog:local .`. The image compiles and tests the application during the build, includes only production dependencies at runtime, runs as the `node` user, and checks `/api/backlog` for health. Compose additionally uses a read-only root filesystem with a writable data volume.
+
+After `docker compose build`, run `npm run test:docker` to check the image's static assets, non-root runtime, writes, reordering, graceful shutdown, and persistence across container replacement. This uses a disposable container and volume, which it removes afterward. For a custom image tag, use `npm run test:docker -- backlog:local`. It requires Node on the host; normal Docker usage does not.
+
 ## Catalog connections
 
 Copy `.env.example` to `.env` and fill in optional values:

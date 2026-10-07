@@ -1,0 +1,26 @@
+services:
+  backlog:
+    build:
+      context: .
+      target: runtime
+    ports:
+      - "127.0.0.1:${BACKLOG_HTTP_PORT:-8080}:3001"
+    environment:
+      IGDB_CLIENT_ID: ${IGDB_CLIENT_ID:-}
+      IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET:-}
+      TMDB_ACCESS_TOKEN: ${TMDB_ACCESS_TOKEN:-}
+    volumes:
+      - backlog-data:/app/data
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  backlog-data:

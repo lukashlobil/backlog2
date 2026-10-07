@@ -11,4 +11,13 @@ if (existsSync(dist)) {
   app.get('/{*path}', (_req, res) => res.sendFile(resolve(dist, 'index.html')));
 }
 const port = Number(process.env.PORT ?? 3001);
-app.listen(port, '127.0.0.1', () => console.log(`Backlog API: http://127.0.0.1:${port}`));
+const host = process.env.HOST ?? '127.0.0.1';
+const server = app.listen(port, host, () => console.log(`Backlog API: http://${host}:${port}`));
+
+// Let in-flight requests finish when Docker stops the container.
+function shutdown() {
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 10000).unref();
+}
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

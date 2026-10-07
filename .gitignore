@@ -5,9 +5,11 @@ riderModule.iml
 /_ReSharper.Caches/
 node_modules/
 dist/
+dist-server/
 .env
 .npm-cache/
 data/
 test-results/
 playwright-report/
 .browsers/
+backlog-docker-backup*.json
